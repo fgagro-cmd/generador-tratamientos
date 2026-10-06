@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de recomendaciones fitosanitarias</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#34412A">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tratamientos">
+<style>
+  @font-face{font-family:'Fraunces';font-weight:400;font-style:normal;src:url('vendor/fonts/fraunces-latin-400-normal.woff2') format('woff2');}
+  @font-face{font-family:'Fraunces';font-weight:600;font-style:normal;src:url('vendor/fonts/fraunces-latin-600-normal.woff2') format('woff2');}
+  @font-face{font-family:'Fraunces';font-weight:700;font-style:normal;src:url('vendor/fonts/fraunces-latin-700-normal.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-weight:400;font-style:normal;src:url('vendor/fonts/inter-latin-400-normal.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-weight:500;font-style:normal;src:url('vendor/fonts/inter-latin-500-normal.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-weight:600;font-style:normal;src:url('vendor/fonts/inter-latin-600-normal.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-weight:700;font-style:normal;src:url('vendor/fonts/inter-latin-700-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:500;font-style:normal;src:url('vendor/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');}
+  @font-face{font-family:'IBM Plex Mono';font-weight:600;font-style:normal;src:url('vendor/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');}
+
+  :root{
+    --clr-bg:#F5F1E6;
+    --clr-ink:#232B1D;
+    --clr-ink-soft:#5B6350;
+    --clr-primary:#34412A;
+    --clr-primary-light:#4C5D3D;
+    --clr-accent:#C08A3E;
+    --clr-warn:#AC4E2C;
+    --clr-line:#DCD5C2;
+    --clr-card-bg:#FFFDF7;
+    --font-head:'Fraunces', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--clr-bg);
+    color:var(--clr-ink);
+    font-family:var(--font-body);
+    padding:28px 16px 60px;
+  }
+
+  .app{max-width:1040px;margin:0 auto;}
+
+  .app-header{margin-bottom:24px;}
+  .app-header h1{
+    font-family:var(--font-head);
+    font-weight:600;
+    font-size:1.7rem;
+    margin:0 0 4px;
+    color:var(--clr-primary);
+  }
+  .app-header p{margin:0;color:var(--clr-ink-soft);font-size:0.92rem;}
+
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;}
+  @media (max-width:860px){.layout{grid-template-columns:1fr;}}
+
+  .panel{
+    background:#fff;
+    border:1px solid var(--clr-line);
+    border-radius:12px;
+    padding:20px;
+  }
+  .panel h2{
+    font-family:var(--font-body);
+    font-size:0.8rem;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:var(--clr-primary);
+    margin:0 0 16px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--clr-line);
+  }
+
+  label{display:block;font-size:0.8rem;color:var(--clr-ink-soft);margin:14px 0 5px;}
+  label.first{margin-top:0;}
+  input[type=text], input[type=date], textarea, select{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:0.92rem;
+    padding:9px 10px;
+    border:1px solid var(--clr-line);
+    border-radius:7px;
+    background:#FBFAF5;
+    color:var(--clr-ink);
+  }
+  textarea{resize:vertical;min-height:56px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .producto{
+    border:1px dashed var(--clr-line);
+    border-radius:9px;
+    padding:12px;
+    margin-top:12px;
+    position:relative;
+  }
+  .producto-grid{display:grid;grid-template-columns:1.3fr 0.9fr 1.3fr auto;gap:8px;align-items:end;}
+  @media (max-width:520px){.producto-grid{grid-template-columns:1fr 1fr;}}
+  .dosis-inputs{display:flex;gap:6px;}
+  .dosis-inputs .f-dosis-valor{flex:1;min-width:0;}
+  .dosis-inputs .f-dosis-unidad{flex:0 0 62px;padding-left:6px;padding-right:2px;}
+  .btn-remove{
+    background:none;border:none;color:var(--clr-warn);font-size:0.78rem;cursor:pointer;
+    padding:9px 6px;white-space:nowrap;
+  }
+
+  .btn{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:0.85rem;
+    border:none;
+    border-radius:8px;
+    padding:10px 16px;
+    cursor:pointer;
+  }
+  .btn-secondary{background:#EFEADB;color:var(--clr-primary);margin-top:14px;}
+  .btn-primary{background:var(--clr-primary);color:#fff;width:100%;margin-top:20px;}
+  .btn-primary:hover{background:var(--clr-primary-light);}
+  .btn-outline{background:#fff;border:1px solid var(--clr-primary);color:var(--clr-primary);margin-top:12px;width:100%;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row .btn{flex:1;margin-top:12px;}
+
+  .hint{font-size:0.76rem;color:var(--clr-ink-soft);margin-top:6px;}
+
+  /* --- Preview card --- */
+  .preview-wrap{position:sticky;top:20px;}
+  #card{
+    max-width:440px;
+    margin:0 auto;
+    background:var(--clr-card-bg);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(52,65,42,0.16);
+    border:1px solid var(--clr-line);
+  }
+  .card-header{
+    background:var(--clr-primary);
+    color:#F5F1E6;
+    padding:20px 22px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  .card-header .marca{font-family:var(--font-head);font-weight:600;font-size:1.25rem;}
+  .card-header .fecha{font-family:var(--font-mono);font-size:0.78rem;opacity:0.85;margin-top:3px;}
+  .card-header .tipo{font-size:0.7rem;opacity:0.75;letter-spacing:.03em;}
+
+  .card-meta{padding:18px 22px 6px;}
+  .meta-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--clr-line);}
+  .meta-row:last-child{border-bottom:none;}
+  .meta-row .k{color:var(--clr-ink-soft);font-size:0.82rem;}
+  .meta-row .v{font-weight:600;font-size:0.86rem;text-align:right;}
+
+  .card-section{padding:14px 22px 4px;}
+  .section-title{
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--clr-primary);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .section-title::before{content:"";width:14px;height:3px;background:var(--clr-accent);border-radius:2px;display:inline-block;}
+
+  .mix-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--clr-line);
+  }
+  .mix-item:last-child{border-bottom:none;}
+  .mix-num{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--clr-primary);color:#fff;
+    font-family:var(--font-mono);font-size:0.72rem;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .mix-name{flex:1;font-size:0.87rem;font-weight:600;}
+  .mix-badge{
+    font-family:var(--font-mono);font-size:0.65rem;font-weight:600;
+    background:#EFEADB;color:var(--clr-primary);
+    padding:2px 6px;border-radius:5px;flex-shrink:0;
+  }
+  .mix-dose{font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--clr-ink);flex-shrink:0;}
+
+  .plazo-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:#F6E7DF;color:var(--clr-warn);
+    font-size:0.8rem;font-weight:600;
+    padding:6px 12px;border-radius:20px;margin:10px 22px 4px;
+  }
+
+  .box{
+    margin:12px 22px 4px;
+    padding:12px 14px;
+    background:#F7F4EA;
+    border-left:3px solid var(--clr-accent);
+    border-radius:6px;
+    font-size:0.82rem;
+    line-height:1.45;
+    white-space:pre-wrap;
+  }
+  .box.obs{border-left-color:var(--clr-primary-light);}
+
+  .card-footer{
+    margin-top:14px;
+    padding:12px 22px 18px;
+    border-top:1px solid var(--clr-line);
+    font-size:0.72rem;
+    color:var(--clr-ink-soft);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  .empty-note{color:var(--clr-ink-soft);font-size:0.82rem;text-align:center;padding:30px 10px;}
+  .mix-note{font-size:0.7rem;color:var(--clr-ink-soft);padding:2px 22px 14px;}
+  .copied{color:var(--clr-primary);}
+  #image-result{margin-top:14px;}
+  #image-result img{width:100%;border-radius:10px;border:1px solid var(--clr-line);display:block;margin-top:8px;}
+  .dl-link{display:block;text-align:center;text-decoration:none;margin-top:10px;}
+  #card.card-hidden{position:absolute;left:-9999px;top:-9999px;}
+
+  details > summary{list-style:none;}
+  details > summary::-webkit-details-marker{display:none;}
+  .historial-item{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 0;border-bottom:1px solid var(--clr-line);
+    font-size:0.82rem;
+  }
+  .historial-item .hi-info{flex:1;min-width:0;}
+  .historial-item .hi-cliente{font-weight:600;}
+  .historial-item .hi-sub{color:var(--clr-ink-soft);font-size:0.76rem;}
+  .historial-item .hi-actions{display:flex;gap:6px;flex-shrink:0;}
+  .btn-mini{
+    font-size:0.72rem;padding:5px 9px;border-radius:6px;border:1px solid var(--clr-line);
+    background:#fff;color:var(--clr-primary);cursor:pointer;white-space:nowrap;
+  }
+  .btn-mini.danger{color:var(--clr-warn);border-color:var(--clr-warn);}
+  .cliente-grupo{border-bottom:1px solid var(--clr-line);}
+  .cg-summary{cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 0;}
+  .cg-summary::before{content:"▸";color:var(--clr-accent);font-size:0.8rem;margin-right:2px;}
+  details.cliente-grupo[open] > .cg-summary::before{content:"▾";}
+  .cg-nombre{font-weight:600;font-size:0.88rem;flex:1;}
+  .cg-meta{color:var(--clr-ink-soft);font-size:0.74rem;text-align:right;}
+  .cg-items{padding:0 0 8px 14px;}
+  .cg-items .historial-item:last-child{border-bottom:none;}
+  .cg-tools{padding:2px 0 8px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <h1>Generador de recomendaciones fitosanitarias</h1>
+    <p>Rellena los datos del tratamiento y genera la tarjeta lista para enviar por WhatsApp.</p>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Datos del tratamiento</h2>
+
+      <details open style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--clr-line);">
+        <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--clr-primary);">Plantillas de tratamiento</summary>
+        <div style="margin-top:10px;">
+          <label class="first">Cargar plantilla</label>
+          <select id="plantilla-select">
+            <option value="">— Elegir plantilla —</option>
+          </select>
+          <div class="btn-row">
+            <button class="btn btn-outline" id="btn-plantilla-eliminar" type="button">Eliminar seleccionada</button>
+          </div>
+
+          <label style="margin-top:16px;">Guardar como nueva plantilla</label>
+          <input type="text" id="plantilla-nombre" placeholder="Ej. Otoño piojo blanco">
+          <button class="btn btn-secondary" id="btn-plantilla-guardar" type="button">Guardar como plantilla</button>
+          <p class="hint" id="plantilla-hint"></p>
+        </div>
+      </details>
+
+      <label class="first">Marca / firma</label>
+      <input type="text" id="marca" placeholder="FG Agro">
+
+      <div class="row2">
+        <div>
+          <label>Cliente</label>
+          <input type="text" id="cliente" list="dl-clientes" placeholder="Nombre del cliente">
+        </div>
+        <div>
+          <label>Finca / parcela</label>
+          <input type="text" id="finca" placeholder="Ej. Finca La Loma">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Cultivo</label>
+          <input type="text" id="cultivo" placeholder="Ej. Limonero Fino 49">
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="fecha">
+        </div>
+      </div>
+
+      <label>Plaga / enfermedad / problema</label>
+      <input type="text" id="problema" placeholder="Ej. Araña roja">
+
+      <label>Plazo de seguridad</label>
+      <input type="text" id="plazo" placeholder="Ej. 15 días">
+
+      <h2 style="margin-top:22px;">Productos (dosis /1000 L de caldo)</h2>
+      <div id="productos"></div>
+      <button class="btn btn-secondary" id="btn-add-producto" type="button">+ Añadir producto</button>
+
+      <label style="margin-top:20px;">Condiciones de aplicación</label>
+      <textarea id="condiciones" placeholder="Ej. Aplicar con temperaturas suaves, evitar horas centrales del día y viento superior a 15 km/h"></textarea>
+
+      <label>Observaciones</label>
+      <textarea id="observaciones" placeholder="Notas adicionales para el cliente"></textarea>
+
+      <button class="btn btn-primary" id="btn-generar" type="button">Generar tarjeta</button>
+      <p class="hint" id="save-hint"></p>
+
+      <details style="margin-top:22px;">
+        <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--clr-primary);">Histórico por cliente (<span id="historial-count">0</span> tratamientos)</summary>
+        <div style="margin-top:12px;">
+          <input type="text" id="historial-filtro" placeholder="Filtrar por cliente...">
+          <p class="hint" id="excel-hint"></p>
+          <div id="historial-lista" style="margin-top:8px;"></div>
+          <div class="btn-row">
+            <button class="btn btn-outline" id="btn-excel-todos" type="button">Excel de todos los clientes</button>
+            <button class="btn btn-secondary" id="btn-historial-vaciar" type="button">Vaciar historial</button>
+          </div>
+        </div>
+      </details>
+
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--clr-primary);">Copia de seguridad</summary>
+        <div style="margin-top:12px;">
+          <p class="hint" style="margin-top:0;">Guarda en un archivo todo lo que tienes (clientes, productos, plantillas e historial). Si cambias de móvil o se borran los datos del navegador, podrás recuperarlo.</p>
+          <p class="hint" id="backup-ultima"></p>
+          <div class="btn-row">
+            <button class="btn btn-outline" id="btn-backup-descargar" type="button">Descargar copia</button>
+            <button class="btn btn-outline" id="btn-backup-compartir" type="button" style="display:none;">Compartir copia</button>
+          </div>
+          <label style="margin-top:18px;">Restaurar desde una copia</label>
+          <input type="file" id="backup-file" accept=".json,application/json,text/plain">
+          <p class="hint" id="backup-hint"></p>
+        </div>
+      </details>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="panel" style="padding:20px 12px;">
+        <h2 style="padding-left:8px;">Vista previa</h2>
+        <div id="card"></div>
+        <div class="btn-row">
+          <button class="btn btn-outline" id="btn-download" type="button">Generar imagen</button>
+          <button class="btn btn-outline" id="btn-copy" type="button">Copiar texto</button>
+        </div>
+        <div id="image-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="dl-clientes"></datalist>
+<datalist id="dl-productos"></datalist>
+
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/xlsx.mini.min.js"></script>
+<script>
+const FORM_TYPES = [
+  {v:'ph',   label:'Regulador de pH',                         badge:'pH',    order:0},
+  {v:'fert', label:'Fertilizante / corrector',                 badge:'FERT',  order:1},
+  {v:'wp',   label:'Polvo mojable / granulado dispersable',    badge:'WP/WG', order:2},
+  {v:'sc',   label:'Suspensión concentrada',                   badge:'SC',    order:3},
+  {v:'otro', label:'Otro',                                     badge:'—',     order:3.5},
+  {v:'sl',   label:'Soluble concentrado',                      badge:'SL',    order:4},
+  {v:'ec',   label:'Concentrado emulsionable',                 badge:'EC',    order:5},
+  {v:'ady',  label:'Adyuvante / coadyuvante',                  badge:'ADY',   order:6},
+];
+
+const UNIDADES = ['L','Kg','g','ml'];
+
+let productoId = 0;
+const productosEl = document.getElementById('productos');
+let catalogoProductos = [];
+let catalogoClientes = [];
+let historial = [];
+let plantillas = [];
+let lastImageDataUrl = null;
+
+// Guarda y lee datos en la memoria propia del navegador (localStorage).
+// Solo se guardan en este dispositivo, no se sincronizan con otros.
+const storage = {
+  async get(key){
+    try{
+      const v = localStorage.getItem(key);
+      return v === null ? null : {value: v};
+    }catch(e){
+      console.error('No se pudo leer de localStorage', e);
+      return null;
+    }
+  },
+  async set(key, value){
+    try{
+      localStorage.setItem(key, value);
+      return {value};
+    }catch(e){
+      console.error('No se pudo guardar en localStorage (¿memoria llena?)', e);
+      return null;
+    }
+  }
+};
+
+function addProductoRow(data){
+  data = data || {};
+  const id = 'p' + (productoId++);
+  const wrap = document.createElement('div');
+  wrap.className = 'producto';
+  wrap.dataset.id = id;
+  wrap.innerHTML = `
+    <div class="producto-grid">
+      <div>
+        <label class="first">Producto</label>
+        <input type="text" class="f-nombre" list="dl-productos" placeholder="Nombre comercial" value="${data.nombre||''}">
+      </div>
+      <div>
+        <label class="first">Formulación</label>
+        <select class="f-tipo">
+          ${FORM_TYPES.map(t=>`<option value="${t.v}" ${data.tipo===t.v?'selected':''}>${t.label}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="first">Dosis /1000L</label>
+        <div class="dosis-inputs">
+          <input type="text" class="f-dosis-valor" placeholder="Ej. 12,5" value="${data.dosisValor||''}">
+          <select class="f-dosis-unidad">
+            ${UNIDADES.map(u=>`<option value="${u}" ${data.dosisUnidad===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button type="button" class="btn-remove">Quitar</button>
+    </div>
+  `;
+  wrap.querySelector('.btn-remove').addEventListener('click', () => {
+    wrap.remove();
+  });
+  wrap.querySelector('.f-nombre').addEventListener('change', (e) => {
+    const match = catalogoProductos.find(p => p.nombre.toLowerCase() === e.target.value.toLowerCase());
+    if(match){ wrap.querySelector('.f-tipo').value = match.tipo; }
+  });
+  productosEl.appendChild(wrap);
+}
+
+document.getElementById('btn-add-producto').addEventListener('click', () => addProductoRow());
+document.getElementById('fecha').valueAsDate = new Date();
+
+function readProductos(){
+  return Array.from(productosEl.querySelectorAll('.producto')).map(row => {
+    const valor = row.querySelector('.f-dosis-valor').value.trim();
+    const unidad = row.querySelector('.f-dosis-unidad').value;
+    return {
+      nombre: row.querySelector('.f-nombre').value.trim(),
+      tipo: row.querySelector('.f-tipo').value,
+      dosis: valor ? `${valor} ${unidad}` : ''
+    };
+  }).filter(p => p.nombre);
+}
+
+function readProductosRaw(){
+  return Array.from(productosEl.querySelectorAll('.producto')).map(row => ({
+    nombre: row.querySelector('.f-nombre').value.trim(),
+    tipo: row.querySelector('.f-tipo').value,
+    dosisValor: row.querySelector('.f-dosis-valor').value.trim(),
+    dosisUnidad: row.querySelector('.f-dosis-unidad').value
+  })).filter(p => p.nombre);
+}
+
+function formTypeInfo(v){
+  return FORM_TYPES.find(t => t.v === v) || FORM_TYPES[FORM_TYPES.length-1];
+}
+
+function renderCard(){
+  const marca = document.getElementById('marca').value.trim();
+  const cliente = document.getElementById('cliente').value.trim();
+  const finca = document.getElementById('finca').value.trim();
+  const cultivo = document.getElementById('cultivo').value.trim();
+  const fecha = document.getElementById('fecha').value;
+  const problema = document.getElementById('problema').value.trim();
+  const plazo = document.getElementById('plazo').value.trim();
+  const condiciones = document.getElementById('condiciones').value.trim();
+  const observaciones = document.getElementById('observaciones').value.trim();
+  const productos = readProductos().sort((a,b) => formTypeInfo(a.tipo).order - formTypeInfo(b.tipo).order);
+
+  const fechaFmt = fecha ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+
+  if(!cliente && !cultivo && productos.length === 0){
+    document.getElementById('card').innerHTML = `<div class="empty-note">Rellena los datos y pulsa "Generar tarjeta" para ver la vista previa.</div>`;
+    return;
+  }
+
+  let metaRows = '';
+  if(cliente) metaRows += `<div class="meta-row"><span class="k">Cliente</span><span class="v">${escapeHtml(cliente)}</span></div>`;
+  if(finca) metaRows += `<div class="meta-row"><span class="k">Finca / parcela</span><span class="v">${escapeHtml(finca)}</span></div>`;
+  if(cultivo) metaRows += `<div class="meta-row"><span class="k">Cultivo</span><span class="v">${escapeHtml(cultivo)}</span></div>`;
+  if(problema) metaRows += `<div class="meta-row"><span class="k">Problema</span><span class="v">${escapeHtml(problema)}</span></div>`;
+
+  let mixItems = productos.map((p, i) => `
+    <div class="mix-item">
+      <div class="mix-num">${i+1}</div>
+      <div class="mix-name">${escapeHtml(p.nombre)}</div>
+      <div class="mix-badge">${formTypeInfo(p.tipo).badge}</div>
+      <div class="mix-dose">${escapeHtml(p.dosis)}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('card').innerHTML = `
+    <div class="card-header">
+      <div>
+        ${marca ? `<div class="marca">${escapeHtml(marca)}</div>` : ''}
+        <div class="tipo">Recomendación de tratamiento</div>
+      </div>
+      <div class="fecha">${fechaFmt}</div>
+    </div>
+    ${metaRows ? `<div class="card-meta">${metaRows}</div>` : ''}
+    ${productos.length ? `
+      <div class="card-section">
+        <div class="section-title">Orden de mezclado — dosis /1000 L de caldo</div>
+      </div>
+      <div style="padding:0 22px;">${mixItems}</div>
+      <div class="mix-note">Orden orientativo según tipo de formulación · verifica compatibilidad de etiqueta antes de mezclar.</div>
+    ` : ''}
+    ${plazo ? `<div class="plazo-pill">Plazo de seguridad: ${escapeHtml(plazo)}</div>` : ''}
+    ${condiciones ? `<div><div class="card-section" style="padding-bottom:0;"><div class="section-title">Condiciones de aplicación</div></div><div class="box">${escapeHtml(condiciones)}</div></div>` : ''}
+    ${observaciones ? `<div><div class="card-section" style="padding-bottom:0;"><div class="section-title">Observaciones</div></div><div class="box obs">${escapeHtml(observaciones)}</div></div>` : ''}
+    <div class="card-footer">
+      <span>${marca ? escapeHtml(marca) : ''}</span>
+      <span>Uso exclusivo del destinatario</span>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function buildWhatsappText(){
+  const marca = document.getElementById('marca').value.trim();
+  const cliente = document.getElementById('cliente').value.trim();
+  const finca = document.getElementById('finca').value.trim();
+  const cultivo = document.getElementById('cultivo').value.trim();
+  const problema = document.getElementById('problema').value.trim();
+  const plazo = document.getElementById('plazo').value.trim();
+  const condiciones = document.getElementById('condiciones').value.trim();
+  const observaciones = document.getElementById('observaciones').value.trim();
+  const productos = readProductos().sort((a,b) => formTypeInfo(a.tipo).order - formTypeInfo(b.tipo).order);
+
+  let lines = [];
+  lines.push(marca ? `*${marca} — Recomendación de tratamiento*` : `*Recomendación de tratamiento*`);
+  if(cliente) lines.push(`Cliente: ${cliente}`);
+  if(finca) lines.push(`Finca/parcela: ${finca}`);
+  if(cultivo) lines.push(`Cultivo: ${cultivo}`);
+  if(problema) lines.push(`Problema: ${problema}`);
+  if(productos.length){
+    lines.push('');
+    lines.push('*Orden de mezclado — dosis /1000 L de caldo:*');
+    productos.forEach((p,i) => lines.push(`${i+1}. ${p.nombre} — ${p.dosis}`));
+  }
+  if(plazo) { lines.push(''); lines.push(`⏳ Plazo de seguridad: ${plazo}`); }
+  if(condiciones) { lines.push(''); lines.push(`*Condiciones de aplicación:*\n${condiciones}`); }
+  if(observaciones) { lines.push(''); lines.push(`*Observaciones:*\n${observaciones}`); }
+  return lines.join('\n');
+}
+
+function buildSnapshot(){
+  return {
+    id: Date.now(),
+    marca: document.getElementById('marca').value.trim(),
+    cliente: document.getElementById('cliente').value.trim(),
+    finca: document.getElementById('finca').value.trim(),
+    cultivo: document.getElementById('cultivo').value.trim(),
+    fecha: document.getElementById('fecha').value,
+    problema: document.getElementById('problema').value.trim(),
+    plazo: document.getElementById('plazo').value.trim(),
+    condiciones: document.getElementById('condiciones').value.trim(),
+    observaciones: document.getElementById('observaciones').value.trim(),
+    productos: readProductosRaw()
+  };
+}
+
+function currentFiltro(){
+  const el = document.getElementById('historial-filtro');
+  return el ? el.value : '';
+}
+
+async function saveHistorialEntry(){
+  const snap = buildSnapshot();
+  const prev = historial[0];
+  if(prev){
+    const prevCompare = JSON.stringify(Object.assign({}, prev, {id: snap.id}));
+    if(prevCompare === JSON.stringify(snap)) return;
+  }
+  historial.unshift(snap);
+  renderHistorial(currentFiltro());
+  await storage.set('historial-tratamientos', JSON.stringify(historial));
+}
+
+function formatFecha(f){
+  return f ? new Date(f + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+}
+
+function renderHistorial(filterText){
+  filterText = (filterText || '').toLowerCase();
+  const countEl = document.getElementById('historial-count');
+  if(countEl) countEl.textContent = historial.length;
+  const list = document.getElementById('historial-lista');
+  if(!list) return;
+
+  const abiertos = new Set(Array.from(list.querySelectorAll('details.cliente-grupo[open]')).map(d => d.dataset.key));
+
+  const filtrados = historial.filter(h => !filterText || (h.cliente || '').toLowerCase().includes(filterText));
+  if(filtrados.length === 0){
+    list.innerHTML = `<p class="hint">${historial.length ? 'Sin resultados para ese filtro.' : 'Aún no hay recomendaciones guardadas.'}</p>`;
+    return;
+  }
+
+  // Ordenar de más reciente a más antiguo y agrupar por cliente
+  const ordenados = filtrados.slice().sort((a, b) => ((b.fecha || '').localeCompare(a.fecha || '')) || (b.id - a.id));
+  const grupos = {};
+  ordenados.forEach(h => {
+    const key = (h.cliente || '').trim().toLowerCase();
+    if(!grupos[key]) grupos[key] = {key, nombre: h.cliente || '(sin cliente)', items: []};
+    grupos[key].items.push(h);
+  });
+  const listaGrupos = Object.values(grupos).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  list.innerHTML = listaGrupos.map(g => {
+    const abierto = (filterText || abiertos.has(g.key)) ? 'open' : '';
+    const ultima = formatFecha(g.items[0].fecha);
+    const n = g.items.length;
+    const filas = g.items.map(h => {
+      const sub = [formatFecha(h.fecha), h.cultivo, h.problema].filter(Boolean).join(' · ');
+      return `
+        <div class="historial-item">
+          <div class="hi-info">
+            <div class="hi-sub" style="font-size:0.82rem;color:var(--clr-ink);">${escapeHtml(sub || '(sin datos)')}</div>
+          </div>
+          <div class="hi-actions">
+            <button type="button" class="btn-mini btn-cargar" data-id="${h.id}">Cargar</button>
+            <button type="button" class="btn-mini danger btn-eliminar" data-id="${h.id}">×</button>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <details class="cliente-grupo" data-key="${escapeHtml(g.key)}" ${abierto}>
+        <summary class="cg-summary">
+          <span class="cg-nombre">${escapeHtml(g.nombre)}</span>
+          <span class="cg-meta">${n} ${n === 1 ? 'tratamiento' : 'tratamientos'}${ultima ? ' · último ' + ultima : ''}</span>
+        </summary>
+        <div class="cg-items"><div class="cg-tools"><button type="button" class="btn-mini btn-excel-cliente" data-key="${escapeHtml(g.key)}">Descargar Excel de este cliente</button></div>${filas}</div>
+      </details>`;
+  }).join('');
+
+  list.querySelectorAll('.btn-cargar').forEach(btn => {
+    btn.addEventListener('click', () => cargarHistorialEntry(Number(btn.dataset.id)));
+  });
+  list.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', () => eliminarHistorialEntry(Number(btn.dataset.id)));
+  });
+  list.querySelectorAll('.btn-excel-cliente').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const items = historial.filter(h => (h.cliente || '').trim().toLowerCase() === key);
+      exportarExcel(items, items.length && items[0].cliente ? items[0].cliente : 'sin cliente');
+    });
+  });
+}
+
+function numDosis(v){
+  if(v === undefined || v === null || v === '') return '';
+  const n = Number(String(v).replace(',', '.'));
+  return isNaN(n) ? v : n;
+}
+
+function serialExcel(fecha){
+  if(!fecha) return '';
+  const [y, m, d] = fecha.split('-').map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / 86400000) + 25569;
+}
+
+function slugify(t){
+  return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'historico';
+}
+
+// Una fila por producto de cada tratamiento (así se puede filtrar y ordenar en Excel)
+function exportarExcel(items, etiqueta){
+  const hint = document.getElementById('excel-hint');
+  if(!items || items.length === 0){
+    if(hint) hint.textContent = 'No hay tratamientos para exportar.';
+    return;
+  }
+  try{
+    const cabecera = ['Fecha','Cliente','Finca','Cultivo','Problema','Plazo de seguridad','Nº mezcla','Producto','Formulación','Dosis /1000 L','Unidad','Condiciones de aplicación','Observaciones'];
+    const claveCliente = h => (h.cliente || '').trim().toLowerCase();
+    const recientes = items.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.id - a.id));
+    const nombrePorClave = {};
+    recientes.forEach(h => { if(!(claveCliente(h) in nombrePorClave)) nombrePorClave[claveCliente(h)] = h.cliente || ''; });
+    const ordenados = items.slice().sort((a, b) =>
+      nombrePorClave[claveCliente(a)].localeCompare(nombrePorClave[claveCliente(b)], 'es') || (b.fecha || '').localeCompare(a.fecha || '') || (b.id - a.id));
+    const filas = [cabecera];
+    ordenados.forEach(h => {
+      const base = [serialExcel(h.fecha), nombrePorClave[claveCliente(h)], h.finca || '', h.cultivo || '', h.problema || '', h.plazo || ''];
+      const cola = [h.condiciones || '', h.observaciones || ''];
+      const prods = (h.productos || []).filter(p => p.nombre)
+        .sort((a, b) => formTypeInfo(a.tipo).order - formTypeInfo(b.tipo).order);
+      if(prods.length === 0){
+        filas.push(base.concat(['', '', '', '', ''], cola));
+      }else{
+        prods.forEach((p, i) => filas.push(base.concat([i + 1, p.nombre, formTypeInfo(p.tipo).label, numDosis(p.dosisValor), p.dosisUnidad || ''], cola)));
+      }
+    });
+    const ws = XLSX.utils.aoa_to_sheet(filas);
+    for(let r = 1; r < filas.length; r++){
+      const celda = ws[XLSX.utils.encode_cell({r, c: 0})];
+      if(celda && typeof celda.v === 'number') celda.z = 'dd/mm/yyyy';
+    }
+    ws['!cols'] = [12,22,18,18,20,16,10,26,30,14,8,45,45].map(w => ({wch: w}));
+    ws['!autofilter'] = {ref: ws['!ref']};
+    const wb = XLSX.utils.book_new();
+    const nombreHoja = (etiqueta || 'Histórico').replace(/[\\\/\?\*\[\]:]/g, ' ').trim().slice(0, 31) || 'Histórico';
+    XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+    const datos = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+    const blob = new Blob([datos], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'historico-' + slugify(etiqueta) + '-' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    if(hint) hint.textContent = 'Excel descargado (' + ordenados.length + ' tratamientos). Búscalo en la carpeta de Descargas.';
+  }catch(e){
+    console.error('No se pudo crear el Excel', e);
+    if(hint) hint.textContent = 'No se pudo crear el Excel. Inténtalo de nuevo.';
+  }
+}
+
+document.getElementById('btn-excel-todos').addEventListener('click', () => {
+  exportarExcel(historial, 'Todos los clientes');
+});
+
+function cargarHistorialEntry(id){
+  const snap = historial.find(h => h.id === id);
+  if(!snap) return;
+  document.getElementById('marca').value = snap.marca || '';
+  document.getElementById('cliente').value = snap.cliente || '';
+  document.getElementById('finca').value = snap.finca || '';
+  document.getElementById('cultivo').value = snap.cultivo || '';
+  document.getElementById('fecha').value = snap.fecha || '';
+  document.getElementById('problema').value = snap.problema || '';
+  document.getElementById('plazo').value = snap.plazo || '';
+  document.getElementById('condiciones').value = snap.condiciones || '';
+  document.getElementById('observaciones').value = snap.observaciones || '';
+  productosEl.innerHTML = '';
+  const productos = (snap.productos && snap.productos.length) ? snap.productos : [{}];
+  productos.forEach(p => addProductoRow(p));
+  document.getElementById('image-result').innerHTML = '';
+  lastImageDataUrl = null;
+  document.getElementById('card').classList.remove('card-hidden');
+  renderCard();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function eliminarHistorialEntry(id){
+  historial = historial.filter(h => h.id !== id);
+  renderHistorial(currentFiltro());
+  await storage.set('historial-tratamientos', JSON.stringify(historial));
+}
+
+let vaciarConfirming = false;
+document.getElementById('btn-historial-vaciar').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-historial-vaciar');
+  if(historial.length === 0) return;
+  if(!vaciarConfirming){
+    vaciarConfirming = true;
+    const original = btn.textContent;
+    btn.dataset.original = original;
+    btn.textContent = '¿Seguro? Pulsa de nuevo';
+    setTimeout(() => { vaciarConfirming = false; btn.textContent = btn.dataset.original; }, 3000);
+    return;
+  }
+  vaciarConfirming = false;
+  btn.textContent = btn.dataset.original || 'Vaciar historial';
+  historial = [];
+  renderHistorial(currentFiltro());
+  await storage.set('historial-tratamientos', JSON.stringify(historial));
+});
+
+document.getElementById('historial-filtro').addEventListener('input', (e) => renderHistorial(e.target.value));
+
+async function shareViaWhatsapp(){
+  const hint = document.getElementById('whatsapp-hint');
+  if(!lastImageDataUrl) return;
+  try{
+    const res = await fetch(lastImageDataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], buildFilename(), {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Recomendación de tratamiento'});
+      return;
+    }
+    throw new Error('share-files-unsupported');
+  }catch(e){
+    if(e && e.name === 'AbortError') return;
+    console.error('No se pudo compartir la imagen', e);
+    if(hint) hint.textContent = 'Este navegador no permite compartir la imagen directamente: descárgala y adjúntala en WhatsApp a mano.';
+  }
+}
+
+function currentPlantillaFields(){
+  return {
+    cultivo: document.getElementById('cultivo').value.trim(),
+    problema: document.getElementById('problema').value.trim(),
+    plazo: document.getElementById('plazo').value.trim(),
+    condiciones: document.getElementById('condiciones').value.trim(),
+    observaciones: document.getElementById('observaciones').value.trim(),
+    productos: readProductosRaw()
+  };
+}
+
+function refreshPlantillaSelect(){
+  const sel = document.getElementById('plantilla-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Elegir plantilla —</option>' +
+    plantillas.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('');
+  if(plantillas.some(p => p.nombre === current)) sel.value = current;
+}
+
+async function persistPlantillas(){
+  await storage.set('plantillas-tratamiento', JSON.stringify(plantillas));
+}
+
+document.getElementById('plantilla-select').addEventListener('change', (e) => {
+  const nombre = e.target.value;
+  if(!nombre) return;
+  const p = plantillas.find(pl => pl.nombre === nombre);
+  if(!p) return;
+  document.getElementById('cultivo').value = p.cultivo || '';
+  document.getElementById('problema').value = p.problema || '';
+  document.getElementById('plazo').value = p.plazo || '';
+  document.getElementById('condiciones').value = p.condiciones || '';
+  document.getElementById('observaciones').value = p.observaciones || '';
+  productosEl.innerHTML = '';
+  const productos = (p.productos && p.productos.length) ? p.productos : [{}];
+  productos.forEach(pr => addProductoRow(pr));
+  document.getElementById('plantilla-nombre').value = p.nombre;
+});
+
+document.getElementById('btn-plantilla-guardar').addEventListener('click', async () => {
+  const nombre = document.getElementById('plantilla-nombre').value.trim();
+  const hint = document.getElementById('plantilla-hint');
+  if(!nombre){
+    hint.textContent = 'Escribe un nombre para la plantilla.';
+    return;
+  }
+  const entry = Object.assign({nombre}, currentPlantillaFields());
+  const idx = plantillas.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if(idx >= 0) plantillas[idx] = entry; else plantillas.push(entry);
+  refreshPlantillaSelect();
+  document.getElementById('plantilla-select').value = nombre;
+  hint.textContent = 'Plantilla guardada.';
+  setTimeout(() => { if(hint.textContent === 'Plantilla guardada.') hint.textContent = ''; }, 2000);
+  await persistPlantillas();
+});
+
+document.getElementById('btn-plantilla-eliminar').addEventListener('click', async () => {
+  const sel = document.getElementById('plantilla-select');
+  const hint = document.getElementById('plantilla-hint');
+  if(!sel.value){
+    hint.textContent = 'Elige una plantilla para eliminar.';
+    return;
+  }
+  plantillas = plantillas.filter(p => p.nombre !== sel.value);
+  refreshPlantillaSelect();
+  hint.textContent = 'Plantilla eliminada.';
+  setTimeout(() => { if(hint.textContent === 'Plantilla eliminada.') hint.textContent = ''; }, 2000);
+  await persistPlantillas();
+});
+
+async function saveToCatalog(){
+  const cliente = document.getElementById('cliente').value.trim();
+  const finca = document.getElementById('finca').value.trim();
+  const cultivo = document.getElementById('cultivo').value.trim();
+  const productos = readProductos();
+
+  if(cliente){
+    const idx = catalogoClientes.findIndex(c => c.cliente.toLowerCase() === cliente.toLowerCase());
+    const entry = {cliente, finca, cultivo};
+    if(idx >= 0) catalogoClientes[idx] = entry; else catalogoClientes.push(entry);
+  }
+  productos.forEach(p => {
+    const idx = catalogoProductos.findIndex(c => c.nombre.toLowerCase() === p.nombre.toLowerCase());
+    const entry = {nombre:p.nombre, tipo:p.tipo};
+    if(idx >= 0) catalogoProductos[idx] = entry; else catalogoProductos.push(entry);
+  });
+
+  refreshDatalists();
+
+  await storage.set('catalogo-clientes', JSON.stringify(catalogoClientes));
+  await storage.set('catalogo-productos', JSON.stringify(catalogoProductos));
+  document.getElementById('save-hint').textContent = 'Catálogo actualizado.';
+  setTimeout(() => document.getElementById('save-hint').textContent = '', 2000);
+}
+
+function refreshDatalists(){
+  document.getElementById('dl-clientes').innerHTML = catalogoClientes.map(c => `<option value="${c.cliente}">`).join('');
+  document.getElementById('dl-productos').innerHTML = catalogoProductos.map(p => `<option value="${p.nombre}">`).join('');
+}
+
+document.getElementById('cliente').addEventListener('change', (e) => {
+  const match = catalogoClientes.find(c => c.cliente.toLowerCase() === e.target.value.toLowerCase());
+  if(match){
+    if(!document.getElementById('finca').value) document.getElementById('finca').value = match.finca;
+    if(!document.getElementById('cultivo').value) document.getElementById('cultivo').value = match.cultivo;
+  }
+});
+
+async function generateImageAssets(){
+  const card = document.getElementById('card');
+  if(!card.querySelector('.card-header')) return null;
+  const canvas = await html2canvas(card, {scale:3, backgroundColor:null});
+  const dataUrl = canvas.toDataURL('image/png');
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  const blobUrl = blob ? URL.createObjectURL(blob) : null;
+  return {dataUrl, blobUrl};
+}
+
+function buildFilename(){
+  const cliente = (document.getElementById('cliente').value.trim() || 'tratamiento').replace(/\s+/g,'_');
+  const fecha = document.getElementById('fecha').value || '';
+  return `recomendacion_${cliente}_${fecha}.png`;
+}
+
+async function showGeneratedImage(){
+  const result = document.getElementById('image-result');
+  const card = document.getElementById('card');
+  try{
+    const assets = await generateImageAssets();
+    if(!assets){
+      card.classList.remove('card-hidden');
+      result.innerHTML = `<p class="hint">Rellena los datos y vuelve a pulsar "Generar imagen".</p>`;
+      lastImageDataUrl = null;
+      return;
+    }
+    lastImageDataUrl = assets.dataUrl;
+    const filename = buildFilename();
+    const downloadHref = assets.blobUrl || assets.dataUrl;
+    result.innerHTML = `
+      <p class="hint">Mantén pulsada la imagen y elige "Guardar imagen" — es el método que mejor funciona en móvil. Si tu navegador sí soporta el botón de descarga, también puedes usarlo.</p>
+      <img src="${assets.dataUrl}" alt="Recomendación de tratamiento">
+      <a class="btn btn-outline dl-link" href="${downloadHref}" download="${filename}">Descargar archivo</a>
+      <button type="button" class="btn btn-primary" id="btn-whatsapp" style="margin-top:10px;">Compartir por WhatsApp</button>
+      <p class="hint" id="whatsapp-hint"></p>
+    `;
+    document.getElementById('btn-whatsapp').addEventListener('click', shareViaWhatsapp);
+    card.classList.add('card-hidden');
+    saveHistorialEntry();
+  }catch(e){
+    console.error('Error al generar la imagen', e);
+    card.classList.remove('card-hidden');
+    result.innerHTML = `<p class="hint">No se pudo generar la imagen. Inténtalo de nuevo.</p>`;
+  }
+}
+
+document.getElementById('btn-generar').addEventListener('click', async () => {
+  renderCard();
+  saveToCatalog();
+  await showGeneratedImage();
+});
+
+document.getElementById('btn-download').addEventListener('click', async () => {
+  await showGeneratedImage();
+});
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const text = buildWhatsappText();
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{
+    document.execCommand('copy');
+    const btn = document.getElementById('btn-copy');
+    const original = btn.textContent;
+    btn.textContent = '¡Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  }catch(e){
+    console.error('No se pudo copiar', e);
+  }
+  document.body.removeChild(ta);
+});
+
+function buildBackup(){
+  return {
+    app: 'generador-tratamientos',
+    version: 1,
+    fecha: new Date().toISOString(),
+    datos: {catalogoClientes, catalogoProductos, historial, plantillas}
+  };
+}
+
+function backupFilename(){
+  return 'copia-seguridad-generador-' + new Date().toISOString().slice(0, 10) + '.json';
+}
+
+function mostrarUltimaCopia(iso){
+  const el = document.getElementById('backup-ultima');
+  if(!el) return;
+  el.textContent = iso
+    ? 'Última copia: ' + new Date(iso).toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'})
+    : 'Todavía no has hecho ninguna copia.';
+}
+
+async function marcarUltimaCopia(){
+  const iso = new Date().toISOString();
+  await storage.set('ultima-copia', iso);
+  mostrarUltimaCopia(iso);
+}
+
+function setBackupHint(texto){
+  document.getElementById('backup-hint').textContent = texto;
+}
+
+document.getElementById('btn-backup-descargar').addEventListener('click', async () => {
+  try{
+    const blob = new Blob([JSON.stringify(buildBackup(), null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = backupFilename();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    await marcarUltimaCopia();
+    setBackupHint('Copia descargada. Búscala en la carpeta de Descargas y guárdala en un sitio seguro (Drive, por ejemplo).');
+  }catch(e){
+    console.error('No se pudo crear la copia', e);
+    setBackupHint('No se pudo descargar la copia. Prueba con "Compartir copia" si aparece.');
+  }
+});
+
+async function compartirCopia(){
+  try{
+    const file = new File([JSON.stringify(buildBackup(), null, 2)], backupFilename(), {type:'application/json'});
+    await navigator.share({files:[file], title:'Copia de seguridad del generador'});
+    await marcarUltimaCopia();
+    setBackupHint('Copia compartida.');
+  }catch(e){
+    if(e && e.name === 'AbortError') return;
+    console.error('No se pudo compartir la copia', e);
+    setBackupHint('No se pudo compartir. Usa "Descargar copia".');
+  }
+}
+document.getElementById('btn-backup-compartir').addEventListener('click', compartirCopia);
+
+function mergeLista(actual, nuevos, claveFn){
+  const claves = new Set(actual.map(claveFn));
+  let anadidos = 0;
+  (Array.isArray(nuevos) ? nuevos : []).forEach(x => {
+    const k = x ? claveFn(x) : null;
+    if(k && !claves.has(k)){ actual.push(x); claves.add(k); anadidos++; }
+  });
+  return anadidos;
+}
+
+document.getElementById('backup-file').addEventListener('change', (e) => {
+  const input = e.target;
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || data.app !== 'generador-tratamientos' || !data.datos) throw new Error('formato no válido');
+      const d = data.datos;
+      const nHist = mergeLista(historial, d.historial, h => h && h.id);
+      const nPlan = mergeLista(plantillas, d.plantillas, p => p && p.nombre && p.nombre.toLowerCase());
+      const nCli  = mergeLista(catalogoClientes, d.catalogoClientes, c => c && c.cliente && c.cliente.toLowerCase());
+      const nProd = mergeLista(catalogoProductos, d.catalogoProductos, c => c && c.nombre && c.nombre.toLowerCase());
+      historial.sort((a, b) => b.id - a.id);
+      await storage.set('historial-tratamientos', JSON.stringify(historial));
+      await storage.set('plantillas-tratamiento', JSON.stringify(plantillas));
+      await storage.set('catalogo-clientes', JSON.stringify(catalogoClientes));
+      await storage.set('catalogo-productos', JSON.stringify(catalogoProductos));
+      refreshDatalists();
+      refreshPlantillaSelect();
+      renderHistorial(currentFiltro());
+      setBackupHint(`Copia restaurada. Añadidos: ${nHist} tratamientos, ${nPlan} plantillas, ${nCli} clientes y ${nProd} productos. No se ha borrado nada de lo que ya tenías.`);
+    }catch(err){
+      console.error('Copia no válida', err);
+      setBackupHint('Ese archivo no parece una copia válida de esta herramienta.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+});
+
+async function init(){
+  try{
+    const c = await storage.get('catalogo-clientes');
+    if(c && c.value) catalogoClientes = JSON.parse(c.value);
+  }catch(e){ catalogoClientes = []; }
+  try{
+    const p = await storage.get('catalogo-productos');
+    if(p && p.value) catalogoProductos = JSON.parse(p.value);
+  }catch(e){ catalogoProductos = []; }
+  try{
+    const h = await storage.get('historial-tratamientos');
+    if(h && h.value) historial = JSON.parse(h.value);
+  }catch(e){ historial = []; }
+  try{
+    const pl = await storage.get('plantillas-tratamiento');
+    if(pl && pl.value) plantillas = JSON.parse(pl.value);
+  }catch(e){ plantillas = []; }
+  try{
+    const uc = await storage.get('ultima-copia');
+    mostrarUltimaCopia(uc && uc.value ? uc.value : null);
+  }catch(e){ mostrarUltimaCopia(null); }
+  try{
+    const prueba = new File(['x'], 'prueba.json', {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[prueba]})){
+      document.getElementById('btn-backup-compartir').style.display = '';
+    }
+  }catch(e){ /* este navegador no puede compartir archivos: el botón queda oculto */ }
+  refreshDatalists();
+  refreshPlantillaSelect();
+  renderHistorial();
+  addProductoRow();
+  renderCard();
+}
+init();
+
+// Registra el service worker (solo funciona cuando la app está en una dirección https)
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.error('No se pudo registrar el service worker', e));
+  });
+}
+</script>
+</body>
+</html>
